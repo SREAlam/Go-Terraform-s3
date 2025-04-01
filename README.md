@@ -1,6 +1,6 @@
 # 🚀 Go + Terraform = AWS Magic ✨
 
-![Successfully Created S3 Bucket](image.png)  
+ 
 *"Behold! My bucket runneth over with... well, nothing yet. But look how pretty it is!"*
 
 ## 📦 What This Sorcery Does
