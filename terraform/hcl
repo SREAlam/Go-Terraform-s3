@@ -1,0 +1,82 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+# S3 Bucket with secure defaults
+resource "aws_s3_bucket" "app_bucket" {
+  bucket = "${var.bucket_prefix}-${formatdate("YYYYMMDD", timestamp())}"
+  
+  tags = {
+    Name        = "AppBucket"
+    Environment = "Production"
+  }
+}
+
+# Block all public access
+resource "aws_s3_bucket_public_access_block" "app_bucket" {
+  bucket = aws_s3_bucket.app_bucket.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Optional CloudFront Distribution (set enable_cloudfront=true to use)
+resource "aws_cloudfront_distribution" "s3_distribution" {
+  count = var.enable_cloudfront ? 1 : 0
+
+  origin {
+    domain_name = aws_s3_bucket.app_bucket.bucket_regional_domain_name
+    origin_id   = "S3Origin"
+  }
+
+  enabled             = true
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "S3Origin"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+
+# Outputs
+output "bucket_name" {
+  value = aws_s3_bucket.app_bucket.bucket
+}
+
+output "cloudfront_url" {
+  value = var.enable_cloudfront ? aws_cloudfront_distribution.s3_distribution[0].domain_name : null
+}
