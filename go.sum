@@ -1,0 +1,8 @@
+go mod tidy
+
+Key Notes:
+go.sum is auto-generated - you don't create it manually
+
+It contains cryptographic hashes of all dependencies
+
+Required for reproducible builds, but not needed for initial GitHub upload if you're using go mod
